@@ -1,0 +1,4 @@
+CompileFlags:
+  Add:
+    - -Isrc
+    - -Wno-missing-braces
