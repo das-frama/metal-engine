@@ -10,17 +10,17 @@ struct VertexIn {
     float2 uv [[attribute(2)]];
 };
 
-struct Uniforms {
-    float4x4 view;
-    float4x4 proj;
-    float4 camera_position;
-};
-
 struct VertexOut {
     float4 position [[position]];
     float3 normal;
     float2 uv;
     float3 world_position;
+};
+
+struct Uniforms {
+    float4x4 view;
+    float4x4 proj;
+    float4 camera_position;
 };
 
 struct Light {
@@ -54,4 +54,5 @@ struct Material {
     float3 color;
     bool emissive;
     bool receive_light;
+    bool has_texture;
 };

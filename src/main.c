@@ -35,7 +35,6 @@ typedef struct Planet {
 static Sun sun;
 static Planet planets[8];
 static Mesh_Data *sphere_mesh = NULL;
-static Material_Data *planet_mat = NULL;
 
 Sun create_sun() {
     assert(sphere_mesh);
@@ -65,8 +64,8 @@ Sun create_sun() {
     return sun;
 }
 
-Planet create_planet(f32 diameter, f32 orbit, f32 orbit_period) {
-    assert(sphere_mesh && planet_mat);
+Planet create_planet(f32 diameter, f32 orbit, f32 orbit_period, const char *image) {
+    assert(sphere_mesh);
 
     Planet planet = {0};
     planet.diameter = diameter;
@@ -74,7 +73,13 @@ Planet create_planet(f32 diameter, f32 orbit, f32 orbit_period) {
     planet.orbit_period = orbit_period;
     planet.entity = entity_create();
 
-    planet.entity->material_id = engine_load_material(planet_mat);
+    Material_Data *mat = material_new(vec3_one());
+    // Загрузка текстуры.
+    if (image) {
+        mat->albedo_texture = engine_load_texture(image);
+    }
+
+    planet.entity->material_id = engine_load_material(mat);
     planet.entity->mesh_id = engine_load_mesh(sphere_mesh);
 
     f32 theta = 0.0f;
@@ -84,7 +89,7 @@ Planet create_planet(f32 diameter, f32 orbit, f32 orbit_period) {
 
     // Орбита.
     planet.orbit_entity = entity_create();
-    Mesh_Data *orbit_mesh = mesh_generate_circle(orbit * 0.5f, 100);
+    Mesh_Data *orbit_mesh = mesh_generate_circle(orbit, 100);
     Material_Data *orbit_mat = material_new(vec3_one());
     orbit_mat->emissive = true;
     planet.orbit_entity->mesh_id = engine_load_mesh(orbit_mesh);
@@ -100,9 +105,6 @@ Planet create_planet(f32 diameter, f32 orbit, f32 orbit_period) {
 void create_solar_system(Scene *scene) {
     // Создать сферический меш.
     sphere_mesh = mesh_generate_sphere(1.0f, 32, 32);
-    // Общий материал для планет.
-    planet_mat = material_new(vec3_new(1.0, 1.0, 0.95f));
-    // planet_mat->emissive = true;
 
     // Солнце.
     sun = create_sun();
@@ -110,14 +112,15 @@ void create_solar_system(Scene *scene) {
     scene_add_light(scene, sun.light);
 
     // Планеты.
-    planets[0] = create_planet(0.15f, 5.00f, 88.0f);    // Меркурий
-    planets[1] = create_planet(0.35f, 7.50f, 225.0f);   // Венера
-    planets[2] = create_planet(0.40f, 10.0f, 365.0f);   // Земля
-    planets[3] = create_planet(0.38f, 13.0f, 687.0f);   // Марс
-    planets[4] = create_planet(1.20f, 18.0f, 4333.0f);  // Юпитер
-    planets[5] = create_planet(1.00f, 24.0f, 10759.0f); // Сатурн
-    planets[6] = create_planet(0.60f, 30.0f, 30687.0f); // Уран
-    planets[7] = create_planet(0.60f, 36.0f, 60190.0f); // Нептун
+    planets[0] = create_planet(0.15f, 5.00f, 88.0f, NULL);  // Меркурий
+    planets[1] = create_planet(0.35f, 7.50f, 225.0f, NULL); // Венера
+    planets[2] =
+        create_planet(0.40f, 10.0f, 365.0f, "/Users/frama/Dev/Engines/mac-engine/assets/earth_day.jpg"); // Земля
+    planets[3] = create_planet(0.38f, 13.0f, 687.0f, NULL);                                              // Марс
+    planets[4] = create_planet(1.20f, 18.0f, 4333.0f, NULL);                                             // Юпитер
+    planets[5] = create_planet(1.00f, 24.0f, 10759.0f, NULL);                                            // Сатурн
+    planets[6] = create_planet(0.60f, 30.0f, 30687.0f, NULL);                                            // Уран
+    planets[7] = create_planet(0.60f, 36.0f, 60190.0f, NULL);                                            // Нептун
     for (int i = 0; i < 8; i++) {
         scene_add_entity(scene, planets[i].entity);
         scene_add_entity(scene, planets[i].orbit_entity);
@@ -125,7 +128,7 @@ void create_solar_system(Scene *scene) {
 
     // Спутники.
     planets[2].sputniks[0] = calloc(1, sizeof(Planet));
-    *planets[2].sputniks[0] = create_planet(0.1f, 1.0f, 30.0f); // Луна.
+    *planets[2].sputniks[0] = create_planet(0.1f, 1.0f, 30.0f, NULL); // Луна.
     planets[2].sputnik_count = 1;
 
     scene_add_entity(scene, planets[2].sputniks[0]->entity);
@@ -142,8 +145,8 @@ void update_solar_system(Scene *scene, f32 dt) {
         planets[i].entity->position.z = orbit * sinf(angle);
         planets[i].entity->position.y = 0.0f;
 
-        for(int j = 0; j < planets[i].sputnik_count; j++) {
-            Planet *sputnik =  planets[i].sputniks[j];
+        for (int j = 0; j < planets[i].sputnik_count; j++) {
+            Planet *sputnik = planets[i].sputniks[j];
             f32 orbit = sputnik->orbit;
             f32 period = sputnik->orbit_period;
             f32 angle = sputnik->orbit_angle + (2.0 * M_PI * dt * 1.0f) / period;
@@ -157,7 +160,6 @@ void update_solar_system(Scene *scene, f32 dt) {
 
 void destroy_solar_system(Scene *scene) {
     mesh_destroy(sphere_mesh);
-    material_destroy(planet_mat);
 }
 
 int main() {

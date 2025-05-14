@@ -191,7 +191,7 @@ Mesh_Data *mesh_generate_sphere(f32 radius, s32 slice_count, s32 stack_count) {
             v.position.z = radius * sinf(phi) * sinf(theta);
 
             v.uv.x = (f32)j / slice_count;
-            v.uv.y = 1.0f - (f32)i / stack_count;
+            v.uv.y = (f32)i / stack_count;
 
             v.normal = vec3_normalize(v.position);
 

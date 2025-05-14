@@ -54,17 +54,27 @@ vertex VertexOut mesh_vertex(VertexIn in [[stage_in]], constant Uniforms &u [[bu
 
 fragment float4 mesh_fragment(VertexOut in [[stage_in]], constant Uniforms &u [[buffer(0)]],
                               constant Light_Buffer &light_buffer [[buffer(1)]],
-                              constant Material &material [[buffer(2)]]) {
+                              constant Material &material [[buffer(2)]],
+                              texture2d<float> albedo_tex [[texture(0)]],
+                              sampler samp [[sampler(0)]]) {
     if (material.emissive) {
         return float4(material.color, 1.0);
+    }
+
+    float3 albedo = material.color;
+    if (material.has_texture) {
+        float3 tex_color = albedo_tex.sample(samp, in.uv).rgb;
+        albedo *= tex_color;
     }
 
     float3 result = float3(0.0);
     float3 V = normalize(u.camera_position.xyz - in.world_position);
 
     for (uint i = 0; i < light_buffer.light_count; i++) {
-        result += apply_light(light_buffer.lights[i], in.world_position, in.normal, V, material.color);
+        result += apply_light(light_buffer.lights[i], in.world_position, in.normal, V, albedo);
     }
+
+
 
     return float4(result, 1.0);
 }

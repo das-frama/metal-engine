@@ -2,9 +2,11 @@
 #include "defines.h"
 #include "math/math.h"
 #include "renderer/renderer.h"
+#include "resources/image.h"
 #include "resources/light.h"
 #include "resources/mesh.h"
 #include "resources/shader.h"
+#include "resources/texture.h"
 #include "shaders/metal/metallib_data.h"
 
 #include <CoreFoundation/CFString.h>
@@ -13,20 +15,16 @@
 #include <Metal/Metal.h>
 #include <MetalKit/MetalKit.h>
 
-typedef struct Metal_Mesh {
+typedef struct {
     id<MTLBuffer> vertex_buffer;
     id<MTLBuffer> index_buffer;
 
     Mesh_Data *data;
-    // u32 vertex_count;
-    // u32 index_count;
-    // draw_topology topology;
-    // bool is_wireframe;
 } Metal_Mesh;
 
-typedef struct Metal_Material {
+typedef struct {
     id<MTLRenderPipelineState> pipeline_state;
-    id<MTLTexture> texture;
+    id<MTLTexture> albedo_texture;
 
     Material_Data *data;
 } Metal_Material;
@@ -150,7 +148,7 @@ Renderer *renderer_init(void *platform_data, u32 width, u32 height) {
     }
     r->materials[0].data = calloc(1, sizeof(Material_Data));
     r->materials[0].data->color = vec3_one();
-    r->materials[0].texture = nil;
+    r->materials[0].albedo_texture = nil;
     r->material_count = 1;
     r->default_material_id = 0;
 
@@ -236,6 +234,11 @@ void renderer_draw(Renderer *r, Render_Command *commands, u32 command_count) {
             [encoder setVertexBuffer:mesh->vertex_buffer offset:0 atIndex:0];
             [encoder setVertexBytes:&cmd->model length:sizeof(mat4) atIndex:2];
             [encoder setFragmentBytes:material->data length:sizeof(Material_Data) atIndex:2];
+            if (material->albedo_texture) {
+                [encoder setFragmentTexture:material->albedo_texture atIndex:0];
+            } else {
+                [encoder setFragmentTexture:nil atIndex:0];
+            }
 
             if (mesh->data->topology == TOPOLOGY_LINE_LIST) {
                 [encoder drawIndexedPrimitives:MTLPrimitiveTypeLine
@@ -298,6 +301,11 @@ u32 renderer_load_material(Renderer *r, Material_Data *mat) {
     material->pipeline_state = r->materials[r->default_material_id].pipeline_state;
     material->data = mat;
 
+    if (mat->albedo_texture) {
+        material->albedo_texture = (__bridge id<MTLTexture>)(mat->albedo_texture->gpu_handle);
+        mat->has_texture = true;
+    }
+
     return r->material_count++;
 }
 
@@ -344,4 +352,51 @@ void renderer_destroy_shader(void *s) {
     shader->fragment_function = nil;
 
     free(shader);
+}
+
+Texture *renderer_create_texture(Renderer *r, Image_Data *img) {
+    MTLPixelFormat format = MTLPixelFormatRGBA8Unorm;
+    u8 *data = img->pixels;
+    int stride = img->width * 4;
+
+    u8 *temp_data = NULL;
+    if (img->channels == 3) {
+        temp_data = malloc(img->width * img->height * 4);
+        for (int i = 0; i < img->width * img->height; i++) {
+            temp_data[i * 4 + 0] = img->pixels[i * 3 + 0];
+            temp_data[i * 4 + 1] = img->pixels[i * 3 + 1];
+            temp_data[i * 4 + 2] = img->pixels[i * 3 + 2];
+            temp_data[i * 4 + 3] = 255;
+        }
+        memcpy(data, temp_data, img->width * img->height * 4);
+    } else {
+        printf("unsupported image format: %d channels", img->channels);
+        return nil;
+    }
+
+    MTLTextureDescriptor *desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:format
+                                                                                    width:img->width
+                                                                                   height:img->height
+                                                                                mipmapped:NO];
+    id<MTLTexture> texture = [r->device newTextureWithDescriptor:desc];
+
+    MTLRegion region = {{0, 0, 0}, {(NSUInteger)img->width, (NSUInteger)img->height, 1}};
+
+    [texture replaceRegion:region mipmapLevel:0 withBytes:data bytesPerRow:stride];
+
+    if (temp_data) free(temp_data);
+
+    Texture *out = calloc(1, sizeof(Texture));
+    out->gpu_handle = (__bridge_retained void *)texture;
+    out->width = texture.width;
+    out->height = texture.height;
+    return out;
+}
+
+void renderer_destroy_texture(Renderer *r, Texture *texture) {
+    // id<MTLTexture> mtl_texture = (__bridge id<MTLTexture>) texture->gpu_handle;
+    // [mtl_texture release];
+    //
+    free(texture->gpu_handle);
+    free(texture);
 }

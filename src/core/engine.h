@@ -6,6 +6,7 @@
 #include "defines.h"
 #include "resources/material.h"
 #include "resources/mesh.h"
+#include "resources/texture.h"
 
 // Инициализация и завершение.
 void engine_init(u32 width, u32 height, const char *title);
@@ -26,6 +27,7 @@ void engine_destory_entity(Entity *e);
 // Resources.
 u32 engine_load_mesh(Mesh_Data *mesh);
 u32 engine_load_material(Material_Data *mat);
+Texture* engine_load_texture(const char *filename);
 
 // Разное.
 void engine_print_fps(void);

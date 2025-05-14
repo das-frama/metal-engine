@@ -144,3 +144,16 @@ u32 engine_load_mesh(Mesh_Data *mesh) {
 u32 engine_load_material(Material_Data *mat) {
     return renderer_load_material(renderer, mat);
 }
+
+Texture *engine_load_texture(const char *filename) {
+    Image_Data image = image_load(filename);
+    if (image.pixels == NULL) {
+        printf("cannot load image: %s\n", filename);
+        return NULL;
+    } else {
+        printf("image %s successfuly loaded – width: %d, height: %d, channels: %d\n", filename, image.width,
+               image.height, image.channels);
+    }
+
+    return renderer_create_texture(renderer, &image);
+}

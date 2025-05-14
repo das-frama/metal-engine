@@ -11,12 +11,12 @@
 #define MAT4_AT(row, col) ((col) * 4 + (row))
 #define DEG2RAD M_PI / 180.0f
 
-typedef struct vec2_u {
+typedef union vec2_u {
     f32 elements[2];
     struct {
         f32 x, y;
     };
-} __attribute__((aligned(16))) vec2;
+} __attribute__((aligned(8))) vec2;
 
 typedef union vec3_u {
     f32 elements[3];
@@ -66,7 +66,7 @@ inline vec2 vec2_zero() {
     return (vec2){0.0f, 0.0f};
 }
 inline vec2 vec2_new(f32 x, f32 y) {
-    return (vec2){.x = x, .y = y};
+    return (vec2){x, y};
 }
 inline vec2 vec2_add(vec2 a, vec2 b) {
     return (vec2){a.x + b.x, a.y + b.y};

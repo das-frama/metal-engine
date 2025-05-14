@@ -15,6 +15,7 @@
 #include "resources/material.c"
 #include "resources/shader.c"
 #include "resources/light.c"
+#include "resources/image.c"
 
 // MacOS specific.
 #include "platform/platform_macos.m"

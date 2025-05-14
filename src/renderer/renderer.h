@@ -5,6 +5,8 @@
 #include "defines.h"
 #include "resources/material.h"
 #include "resources/mesh.h"
+#include "resources/image.h"
+#include "resources/texture.h"
 
 typedef struct Uniforms {
     mat4 view;
@@ -34,3 +36,6 @@ void renderer_end_frame(Renderer *r);
 
 void *renderer_load_shader(Renderer *r, const char *filepath, const char *v_entry, const char *f_entry);
 void renderer_destroy_shader(void *s);
+
+Texture *renderer_create_texture(Renderer *r, Image_Data *img);
+void renderer_destroy_texture(Renderer *r, Texture *texture);
