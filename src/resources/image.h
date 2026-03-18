@@ -8,5 +8,5 @@ typedef struct {
     s32 channels;
 } Image_Data;
 
-Image_Data image_load(const char *filename);
+Image_Data image_load(const char *filename, s32 channels);
 void image_destroy(Image_Data *id);

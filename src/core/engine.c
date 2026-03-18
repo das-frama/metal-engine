@@ -66,7 +66,7 @@ void engine_shutdown() {
 
 void engine_show_grid(bool show, Scene *s) {
     if (debug_grid == NULL && show) {
-        Mesh_Data *md = mesh_generate_grid(100, 100, 50, 50);
+        Mesh_Data *md = mesh_generate_grid(500, 500, 50, 50);
         if (!md) {
             printf("Failed to create grid mesh\n");
             return;
@@ -146,17 +146,14 @@ u32 engine_load_material(Material_Data *mat) {
     return renderer_load_material(renderer, mat);
 }
 
-Texture *engine_load_texture(const char *filename) {
-    Image_Data image = image_load(filename);
+Texture *engine_load_texture(const char *filename, s32 channels) {
+    Image_Data image = image_load(filename, channels);
     if (image.pixels == NULL) {
         printf("cannot load image: %s\n", filename);
         return NULL;
     }
 
-    printf("image %s successfuly loaded – width: %d, height: %d, channels: %d\n", filename, image.width,
-            image.height, image.channels);
-
-    Texture *tex = renderer_create_texture(renderer, &image);
+    Texture *out = renderer_create_texture(renderer, &image);
     image_destroy(&image);
-    return tex;
+    return out;
 }

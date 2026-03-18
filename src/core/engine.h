@@ -27,7 +27,7 @@ void engine_destory_entity(Entity *e);
 // Resources.
 u32 engine_load_mesh(Mesh_Data *mesh);
 u32 engine_load_material(Material_Data *mat);
-Texture* engine_load_texture(const char *filename);
+Texture *engine_load_texture(const char *filename, s32 channels);
 
 // Разное.
 void engine_print_fps(void);

@@ -42,19 +42,20 @@ Sun create_sun() {
     // Сущность.
     Sun sun = {0};
     sun.entity = entity_create();
-    sun.entity->scale = vec3_mul(sun.entity->scale, 2.0f);
+    sun.entity->scale = vec3_mul(sun.entity->scale, 10.0f);
 
     // Меш.
     sun.entity->mesh_id = engine_load_mesh(sphere_mesh);
 
     // Материал.
-    sun.mat = material_new(vec3_new(1.0, 1.0, 0.5));
+    sun.mat = material_new(vec3_one());
     sun.mat->emissive = true;
+    sun.mat->albedo_texture = engine_load_texture("./assets/sun.jpg", 0);
     sun.entity->material_id = engine_load_material(sun.mat);
 
     // Создать свет.
     sun.light = light_create(vec3_new(0.0, 0.0, 0.0), LIGHT_TYPE_POINT);
-    sun.light->power = 0.5f;
+    sun.light->power = 1.0f;
     sun.light->radius = 0.0f;
     sun.light->falloff = 0.0f;
     sun.light->ambient_color = vec3_new(0.01f, 0.01f, 0.01f);
@@ -76,7 +77,7 @@ Planet create_planet(f32 diameter, f32 orbit, f32 orbit_period, const char *imag
     Material_Data *mat = material_new(vec3_one());
     // Загрузка текстуры.
     if (image) {
-        mat->albedo_texture = engine_load_texture(image);
+        mat->albedo_texture = engine_load_texture(image, 0);
     }
 
     planet.entity->material_id = engine_load_material(mat);
@@ -89,7 +90,7 @@ Planet create_planet(f32 diameter, f32 orbit, f32 orbit_period, const char *imag
 
     // Орбита.
     planet.orbit_entity = entity_create();
-    Mesh_Data *orbit_mesh = mesh_generate_circle(orbit, 100);
+    Mesh_Data *orbit_mesh = mesh_generate_circle(orbit * 3.0f, 100);
     Material_Data *orbit_mat = material_new(vec3_one());
     orbit_mat->emissive = true;
     planet.orbit_entity->mesh_id = engine_load_mesh(orbit_mesh);
@@ -136,7 +137,7 @@ void create_solar_system(Scene *scene) {
 
 void update_solar_system(Scene *scene, f32 dt) {
     for (int i = 0; i < 8; i++) {
-        f32 orbit = planets[i].orbit;
+        f32 orbit = planets[i].orbit * 3.0f;
         f32 period = planets[i].orbit_period;
         f32 angle = planets[i].orbit_angle + (2.0 * M_PI * dt * 10.0f) / period;
 
