@@ -355,23 +355,37 @@ void renderer_destroy_shader(void *s) {
 }
 
 Texture *renderer_create_texture(Renderer *r, Image_Data *img) {
-    MTLPixelFormat format = MTLPixelFormatRGBA8Unorm;
-    u8 *data = img->pixels;
-    int stride = img->width * 4;
+    if (!r || !r->device || !img || !img->pixels) return NULL;
+    if (img->width <= 0 || img->height <= 0) return NULL;
 
-    u8 *temp_data = NULL;
-    if (img->channels == 3) {
-        temp_data = malloc(img->width * img->height * 4);
-        for (int i = 0; i < img->width * img->height; i++) {
-            temp_data[i * 4 + 0] = img->pixels[i * 3 + 0];
-            temp_data[i * 4 + 1] = img->pixels[i * 3 + 1];
-            temp_data[i * 4 + 2] = img->pixels[i * 3 + 2];
-            temp_data[i * 4 + 3] = 255;
+    MTLPixelFormat format = MTLPixelFormatRGBA8Unorm;
+
+    const u8 *src = img->pixels;
+    u8 *temp_rgba = NULL;
+
+    const u8 *upload_bytes = NULL;
+    NSUInteger stride = 0;
+
+    if (img->channels == 4) {
+        upload_bytes = src;
+        stride = (NSUInteger)img->width * 4;
+    } else if (img->channels == 3) {
+        size_t pixel_count = (size_t)img->width * (size_t)img->height;
+        temp_rgba = (u8 *)malloc(pixel_count * 4);
+        if (!temp_rgba) return NULL;
+
+        for (size_t i = 0; i < pixel_count; i++) {
+            temp_rgba[i * 4 + 0] = img->pixels[i * 3 + 0];
+            temp_rgba[i * 4 + 1] = img->pixels[i * 3 + 1];
+            temp_rgba[i * 4 + 2] = img->pixels[i * 3 + 2];
+            temp_rgba[i * 4 + 3] = 255;
         }
-        memcpy(data, temp_data, img->width * img->height * 4);
+        upload_bytes = temp_rgba;
+        stride = (NSUInteger)img->width * 4;
+        // memcpy(src, temp_rgba, img->width * img->height * 4);
     } else {
         printf("unsupported image format: %d channels", img->channels);
-        return nil;
+        return NULL;
     }
 
     MTLTextureDescriptor *desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:format
@@ -379,24 +393,30 @@ Texture *renderer_create_texture(Renderer *r, Image_Data *img) {
                                                                                    height:img->height
                                                                                 mipmapped:NO];
     id<MTLTexture> texture = [r->device newTextureWithDescriptor:desc];
+    if (!texture) {
+        if (temp_rgba) free(temp_rgba);
+        return NULL;
+    }
 
     MTLRegion region = {{0, 0, 0}, {(NSUInteger)img->width, (NSUInteger)img->height, 1}};
+    [texture replaceRegion:region mipmapLevel:0 withBytes:upload_bytes bytesPerRow:stride];
 
-    [texture replaceRegion:region mipmapLevel:0 withBytes:data bytesPerRow:stride];
+    if (temp_rgba) free(temp_rgba);
 
-    if (temp_data) free(temp_data);
-
-    Texture *out = calloc(1, sizeof(Texture));
+    Texture *out = (Texture *)calloc(1, sizeof(Texture));
     out->gpu_handle = (__bridge_retained void *)texture;
-    out->width = texture.width;
-    out->height = texture.height;
+    out->width = (u32)texture.width;
+    out->height = (u32)texture.height;
     return out;
 }
 
 void renderer_destroy_texture(Renderer *r, Texture *texture) {
-    // id<MTLTexture> mtl_texture = (__bridge id<MTLTexture>) texture->gpu_handle;
-    // [mtl_texture release];
-    //
-    free(texture->gpu_handle);
+    (void)r;
+    if (!texture) return;
+
+    if (texture->gpu_handle) {
+        CFBridgingRelease(texture->gpu_handle);
+        texture->gpu_handle = NULL;
+    }
     free(texture);
 }

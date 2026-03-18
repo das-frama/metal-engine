@@ -3,6 +3,7 @@
 #include "core/input.h"
 #include "platform/platform.h"
 #include "renderer/renderer.h"
+#include "resources/image.h"
 #include "resources/mesh.h"
 
 #include <mach/mach_time.h>
@@ -150,10 +151,12 @@ Texture *engine_load_texture(const char *filename) {
     if (image.pixels == NULL) {
         printf("cannot load image: %s\n", filename);
         return NULL;
-    } else {
-        printf("image %s successfuly loaded – width: %d, height: %d, channels: %d\n", filename, image.width,
-               image.height, image.channels);
     }
 
-    return renderer_create_texture(renderer, &image);
+    printf("image %s successfuly loaded – width: %d, height: %d, channels: %d\n", filename, image.width,
+            image.height, image.channels);
+
+    Texture *tex = renderer_create_texture(renderer, &image);
+    image_destroy(&image);
+    return tex;
 }
